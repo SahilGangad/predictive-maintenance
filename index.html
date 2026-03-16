@@ -1,0 +1,1447 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Predictive Maintenance</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --blue: #3b82f6;
+        --blue-lt: #eff6ff;
+        --blue-dk: #1d4ed8;
+        --teal: #14b8a6;
+        --teal-lt: #f0fdfa;
+        --orange: #f97316;
+        --green: #22c55e;
+        --green-lt: #f0fdf4;
+        --yellow: #eab308;
+        --yellow-lt: #fefce8;
+        --red: #ef4444;
+        --red-lt: #fef2f2;
+        --bg: #f0f4ff;
+        --white: #ffffff;
+        --text: #1e293b;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --shadow: 0 2px 12px rgba(59, 130, 246, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Nunito Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* ── Topbar ─────────────────────────────────────────── */
+      .topbar {
+        background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+        padding: 0 24px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 16px rgba(59, 130, 246, 0.25);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+
+      .brand-name {
+        font-family: "Nunito", sans-serif;
+        font-size: 17px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.3px;
+      }
+
+      .brand-sub {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+        font-weight: 500;
+      }
+
+      .api-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .api-bar input {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-family: "Nunito Sans", monospace;
+        font-size: 12px;
+        color: #fff;
+        width: 200px;
+        outline: none;
+        backdrop-filter: blur(4px);
+      }
+
+      .api-bar input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .api-bar input:focus {
+        border-color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-test {
+        padding: 6px 14px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        font-family: "Nunito", sans-serif;
+      }
+      .btn-test:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .conn-pill {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        font-family: "Nunito", sans-serif;
+        letter-spacing: 0.3px;
+      }
+      .conn-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+      }
+      .conn-pill.ok {
+        background: rgba(34, 197, 94, 0.25);
+        border-color: rgba(34, 197, 94, 0.4);
+        color: #fff;
+      }
+      .conn-pill.ok .conn-dot {
+        background: #4ade80;
+        box-shadow: 0 0 6px #4ade80;
+      }
+      .conn-pill.err {
+        background: rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.4);
+      }
+      .conn-pill.err .conn-dot {
+        background: #f87171;
+      }
+
+      /* ── Page ───────────────────────────────────────────── */
+      .page {
+        max-width: 1060px;
+        margin: 0 auto;
+        padding: 28px 20px 60px;
+      }
+
+      .page-header {
+        margin-bottom: 24px;
+      }
+      .page-title {
+        font-family: "Nunito", sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.3px;
+      }
+      .page-desc {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      /* ── Grid ───────────────────────────────────────────── */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      /* ── Card ───────────────────────────────────────────── */
+      .card {
+        background: var(--white);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        animation: fadeUp 0.4s ease both;
+      }
+
+      .card-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .card-head-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .card-title {
+        font-family: "Nunito", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .card-sub {
+        font-size: 11px;
+        color: var(--muted);
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-weight: 600;
+      }
+
+      .card-body {
+        padding: 20px;
+      }
+
+      /* ── Section label ──────────────────────────────────── */
+      .sec-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sec-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ── Machine type ───────────────────────────────────── */
+      .type-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .type-btn {
+        flex: 1;
+        padding: 12px 8px;
+        border-radius: 12px;
+        border: 2px solid var(--border);
+        background: #f8fafc;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.18s;
+        font-family: "Nunito", sans-serif;
+      }
+
+      .type-btn:hover {
+        border-color: var(--blue);
+        background: var(--blue-lt);
+      }
+
+      .type-letter {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--muted);
+        line-height: 1;
+        font-family: "Nunito", sans-serif;
+      }
+      .type-word {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-top: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .type-btn.active-L {
+        border-color: var(--teal);
+        background: var(--teal-lt);
+      }
+      .type-btn.active-L .type-letter {
+        color: var(--teal);
+      }
+      .type-btn.active-L .type-word {
+        color: var(--teal);
+      }
+
+      .type-btn.active-M {
+        border-color: var(--blue);
+        background: var(--blue-lt);
+      }
+      .type-btn.active-M .type-letter {
+        color: var(--blue);
+      }
+      .type-btn.active-M .type-word {
+        color: var(--blue);
+      }
+
+      .type-btn.active-H {
+        border-color: var(--orange);
+        background: #fff7ed;
+      }
+      .type-btn.active-H .type-letter {
+        color: var(--orange);
+      }
+      .type-btn.active-H .type-word {
+        color: var(--orange);
+      }
+
+      /* ── Form grid ──────────────────────────────────────── */
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .fg {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        padding: 14px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        transition: border-color 0.15s;
+      }
+
+      .fg:focus-within {
+        border-color: var(--blue);
+        background: var(--blue-lt);
+      }
+
+      .fg-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .fg-unit {
+        font-size: 11px;
+        color: var(--blue);
+        font-weight: 700;
+        background: var(--blue-lt);
+        padding: 1px 7px;
+        border-radius: 4px;
+      }
+
+      .fg-val {
+        font-family: "Nunito", sans-serif;
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text);
+        line-height: 1;
+      }
+
+      input[type="number"] {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-family: "Nunito", sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        width: 100%;
+        padding: 0;
+      }
+
+      input[type="number"]::-webkit-inner-spin-button {
+        opacity: 0.5;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        outline: none;
+        cursor: pointer;
+        margin-top: 2px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--blue);
+        border: 3px solid #fff;
+        box-shadow: 0 1px 6px rgba(59, 130, 246, 0.4);
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+      }
+
+      .range-ends {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: #cbd5e1;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      /* Tool wear full width */
+      .fg.full {
+        grid-column: 1 / -1;
+      }
+
+      .wear-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(
+          to right,
+          var(--green) 0%,
+          var(--yellow) 40%,
+          var(--orange) 70%,
+          var(--red) 100%
+        );
+        margin-top: 2px;
+        position: relative;
+      }
+
+      .wear-thumb {
+        position: absolute;
+        top: 50%;
+        width: 18px;
+        height: 18px;
+        background: var(--white);
+        border: 3px solid var(--blue);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 1px 6px rgba(59, 130, 246, 0.4);
+        pointer-events: none;
+        transition: left 0.05s;
+      }
+
+      .wear-range {
+        position: absolute;
+        inset: 0;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+        margin: 0;
+        height: 8px;
+        border-radius: 4px;
+      }
+      .wear-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+
+      /* ── Submit ─────────────────────────────────────────── */
+      .btn-predict {
+        width: 100%;
+        margin-top: 18px;
+        padding: 14px;
+        background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-family: "Nunito", sans-serif;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        letter-spacing: 0.3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition:
+          opacity 0.15s,
+          transform 0.1s,
+          box-shadow 0.15s;
+        box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+      }
+      .btn-predict:hover {
+        opacity: 0.92;
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+      }
+      .btn-predict:active {
+        transform: scale(0.99);
+      }
+      .btn-predict:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+
+      /* ── Right col ──────────────────────────────────────── */
+      .right {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* ── Result empty ───────────────────────────────────── */
+      .empty {
+        text-align: center;
+        padding: 44px 20px;
+        color: #cbd5e1;
+      }
+      .empty svg {
+        margin-bottom: 12px;
+      }
+      .empty p {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .empty small {
+        font-size: 11px;
+      }
+
+      /* ── Prob ring ──────────────────────────────────────── */
+      .ring-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 28px 20px 18px;
+      }
+
+      .ring-box {
+        position: relative;
+        width: 148px;
+        height: 148px;
+        margin-bottom: 16px;
+      }
+      .ring-box svg {
+        transform: rotate(-90deg);
+      }
+      .ring-track {
+        fill: none;
+        stroke: #f1f5f9;
+        stroke-width: 12;
+      }
+      .ring-fill {
+        fill: none;
+        stroke-width: 12;
+        stroke-linecap: round;
+        transition:
+          stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke 0.4s;
+      }
+
+      .ring-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .ring-pct {
+        font-family: "Nunito", sans-serif;
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .ring-lbl {
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 600;
+        margin-top: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .risk-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 18px;
+        border-radius: 100px;
+        font-family: "Nunito", sans-serif;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+      .risk-LOW {
+        background: var(--green-lt);
+        color: #15803d;
+        border: 2px solid #86efac;
+      }
+      .risk-MEDIUM {
+        background: var(--yellow-lt);
+        color: #854d0e;
+        border: 2px solid #fde047;
+      }
+      .risk-HIGH {
+        background: #fff7ed;
+        color: #c2410c;
+        border: 2px solid #fdba74;
+      }
+      .risk-CRITICAL {
+        background: var(--red-lt);
+        color: #b91c1c;
+        border: 2px solid #fca5a5;
+      }
+
+      /* ── Alert ──────────────────────────────────────────── */
+      .alert {
+        margin: 20px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin: 0 20px 4px;
+      }
+      .alert svg {
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .alert-ok {
+        background: var(--green-lt);
+        color: #166534;
+        border: 1.5px solid #86efac;
+      }
+      .alert-warn {
+        background: var(--red-lt);
+        color: #991b1b;
+        border: 1.5px solid #fca5a5;
+      }
+
+      /* ── Stats ──────────────────────────────────────────── */
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 16px 20px 20px;
+      }
+
+      .stat {
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        border: 1.5px solid var(--border);
+      }
+      .stat-n {
+        font-family: "Nunito", sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .stat-l {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      .stat-blue {
+        background: var(--blue-lt);
+        border-color: #bfdbfe;
+      }
+      .stat-teal {
+        background: var(--teal-lt);
+        border-color: #99f6e4;
+      }
+      .stat-orange {
+        background: #fff7ed;
+        border-color: #fed7aa;
+      }
+      .stat-slate {
+        background: #f8fafc;
+        border-color: var(--border);
+      }
+
+      /* ── History ────────────────────────────────────────── */
+      .hist {
+        display: flex;
+        flex-direction: column;
+        max-height: 230px;
+        overflow-y: auto;
+      }
+      .hist::-webkit-scrollbar {
+        width: 3px;
+      }
+      .hist::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+      }
+
+      .hrow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 20px;
+        border-bottom: 1px solid #f8fafc;
+        font-size: 12px;
+        color: var(--muted);
+        transition: background 0.1s;
+      }
+      .hrow:hover {
+        background: #fafbff;
+      }
+      .hrow:last-child {
+        border-bottom: none;
+      }
+
+      .htype {
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 11px;
+        font-family: "Nunito", sans-serif;
+      }
+      .ht-L {
+        background: var(--teal-lt);
+        color: var(--teal);
+      }
+      .ht-M {
+        background: var(--blue-lt);
+        color: var(--blue);
+      }
+      .ht-H {
+        background: #fff7ed;
+        color: var(--orange);
+      }
+
+      .hprob {
+        font-family: "Nunito", sans-serif;
+        font-weight: 800;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .hrisk {
+        padding: 3px 9px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+        font-family: "Nunito", sans-serif;
+      }
+      .hr-LOW {
+        background: var(--green-lt);
+        color: #15803d;
+      }
+      .hr-MEDIUM {
+        background: var(--yellow-lt);
+        color: #854d0e;
+      }
+      .hr-HIGH {
+        background: #fff7ed;
+        color: #c2410c;
+      }
+      .hr-CRITICAL {
+        background: var(--red-lt);
+        color: #b91c1c;
+      }
+
+      .hempty {
+        text-align: center;
+        padding: 28px;
+        font-size: 12px;
+        color: #cbd5e1;
+        font-weight: 600;
+      }
+
+      /* ── Spinner ────────────────────────────────────────── */
+      .spinner {
+        width: 17px;
+        height: 17px;
+        border: 2.5px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+
+      /* ── Animations ─────────────────────────────────────── */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .card:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .card:nth-child(2) {
+        animation-delay: 0.07s;
+      }
+      .right .card:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .right .card:nth-child(2) {
+        animation-delay: 0.12s;
+      }
+
+      /* ── Responsive ─────────────────────────────────────── */
+      @media (max-width: 780px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .api-bar {
+          display: none;
+        }
+        .topbar {
+          padding: 0 16px;
+        }
+        .page {
+          padding: 20px 14px 40px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#fff"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">PredictMaint</div>
+          <div class="brand-sub">AI4I 2020 · Machine Failure Detection</div>
+        </div>
+      </div>
+      <div class="api-bar">
+        <input
+          type="text"
+          id="apiUrl"
+          value="https://predictive-maintenance-e00u.onrender.com/"
+          placeholder="API URL"
+        />
+        <button class="btn-test" onclick="testConn()">Test</button>
+        <div class="conn-pill" id="connPill">
+          <div class="conn-dot"></div>
+          <span id="connTxt">Checking...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-title">Machine Health Prediction</div>
+        <div class="page-desc">
+          Enter sensor readings to predict machine failure probability in
+          real-time
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Form card -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div
+                class="card-dot"
+                style="background: linear-gradient(135deg, #3b82f6, #14b8a6)"
+              ></div>
+              <span class="card-title">Sensor Parameters</span>
+            </div>
+            <span class="card-sub">6 inputs</span>
+          </div>
+          <div class="card-body">
+            <!-- Machine type -->
+            <div class="sec-label">Machine Type</div>
+            <div class="type-row">
+              <button class="type-btn" id="btn-L" onclick="setType('L')">
+                <div class="type-letter">L</div>
+                <div class="type-word">Low</div>
+              </button>
+              <button
+                class="type-btn active-M"
+                id="btn-M"
+                onclick="setType('M')"
+              >
+                <div class="type-letter">M</div>
+                <div class="type-word">Medium</div>
+              </button>
+              <button class="type-btn" id="btn-H" onclick="setType('H')">
+                <div class="type-letter">H</div>
+                <div class="type-word">High</div>
+              </button>
+            </div>
+            <input type="hidden" id="machine_type" value="M" />
+
+            <!-- Sensor inputs -->
+            <div class="sec-label">Sensor Readings</div>
+            <div class="form-grid">
+              <div class="fg">
+                <div class="fg-label">
+                  Air Temperature <span class="fg-unit">K</span>
+                </div>
+                <input
+                  type="number"
+                  id="air_temp"
+                  value="298.1"
+                  min="295"
+                  max="305"
+                  step="0.1"
+                  oninput="si('air_temp', 'r_air', 1)"
+                />
+                <input
+                  type="range"
+                  id="r_air"
+                  min="295"
+                  max="305"
+                  step="0.1"
+                  value="298.1"
+                  oninput="sr('air_temp', 'r_air', 1)"
+                />
+                <div class="range-ends">
+                  <span>295 K</span><span>305 K</span>
+                </div>
+              </div>
+
+              <div class="fg">
+                <div class="fg-label">
+                  Process Temp <span class="fg-unit">K</span>
+                </div>
+                <input
+                  type="number"
+                  id="proc_temp"
+                  value="308.6"
+                  min="305"
+                  max="315"
+                  step="0.1"
+                  oninput="si('proc_temp', 'r_proc', 1)"
+                />
+                <input
+                  type="range"
+                  id="r_proc"
+                  min="305"
+                  max="315"
+                  step="0.1"
+                  value="308.6"
+                  oninput="sr('proc_temp', 'r_proc', 1)"
+                />
+                <div class="range-ends">
+                  <span>305 K</span><span>315 K</span>
+                </div>
+              </div>
+
+              <div class="fg">
+                <div class="fg-label">
+                  Rotational Speed <span class="fg-unit">RPM</span>
+                </div>
+                <input
+                  type="number"
+                  id="rpm"
+                  value="1551"
+                  min="1000"
+                  max="3000"
+                  step="1"
+                  oninput="si('rpm', 'r_rpm', 0)"
+                />
+                <input
+                  type="range"
+                  id="r_rpm"
+                  min="1000"
+                  max="3000"
+                  step="1"
+                  value="1551"
+                  oninput="sr('rpm', 'r_rpm', 0)"
+                />
+                <div class="range-ends"><span>1000</span><span>3000</span></div>
+              </div>
+
+              <div class="fg">
+                <div class="fg-label">
+                  Torque <span class="fg-unit">Nm</span>
+                </div>
+                <input
+                  type="number"
+                  id="torque"
+                  value="42.8"
+                  min="0"
+                  max="80"
+                  step="0.1"
+                  oninput="si('torque', 'r_torque', 1)"
+                />
+                <input
+                  type="range"
+                  id="r_torque"
+                  min="0"
+                  max="80"
+                  step="0.1"
+                  value="42.8"
+                  oninput="sr('torque', 'r_torque', 1)"
+                />
+                <div class="range-ends"><span>0</span><span>80 Nm</span></div>
+              </div>
+
+              <!-- Tool wear full width with color track -->
+              <div class="fg full">
+                <div class="fg-label">
+                  Tool Wear
+                  <span class="fg-unit" id="wear-unit-badge">FRESH</span>
+                </div>
+                <input
+                  type="number"
+                  id="tool_wear"
+                  value="0"
+                  min="0"
+                  max="300"
+                  step="1"
+                  oninput="
+                    si('tool_wear', 'r_wear', 0);
+                    updateWearBadge();
+                  "
+                />
+                <div style="position: relative; height: 8px; margin-top: 6px">
+                  <div class="wear-track"></div>
+                  <div class="wear-thumb" id="wearThumb" style="left: 0%"></div>
+                  <input
+                    type="range"
+                    class="wear-range"
+                    id="r_wear"
+                    min="0"
+                    max="300"
+                    step="1"
+                    value="0"
+                    oninput="
+                      sr('tool_wear', 'r_wear', 0);
+                      updateWearThumb();
+                      updateWearBadge();
+                    "
+                  />
+                </div>
+                <div class="range-ends" style="margin-top: 6px">
+                  <span>0 — Fresh</span><span>75</span><span>150</span
+                  ><span>225</span><span>300 — Critical</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-predict" id="predBtn" onclick="predict()">
+              <span id="btnC">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Run Prediction
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="right">
+          <!-- Result card -->
+          <div class="card">
+            <div class="card-head">
+              <div class="card-head-left">
+                <div class="card-dot" style="background: #f97316"></div>
+                <span class="card-title">Prediction Result</span>
+              </div>
+              <span class="card-sub" id="resTime">—</span>
+            </div>
+            <div id="resBody">
+              <div class="empty">
+                <svg
+                  width="44"
+                  height="44"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
+                <p>No prediction yet</p>
+                <small>Set parameters and click Run</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- History card -->
+          <div class="card">
+            <div class="card-head">
+              <div class="card-head-left">
+                <div class="card-dot" style="background: #8b5cf6"></div>
+                <span class="card-title">History</span>
+              </div>
+              <button
+                onclick="clearHist()"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--muted);
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  font-family: &quot;Nunito&quot;, sans-serif;
+                "
+              >
+                Clear
+              </button>
+            </div>
+            <div class="hist" id="histList">
+              <div class="hempty">No predictions yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let mType = "M",
+        history = [];
+
+      // Sync slider ↔ input
+      function sr(iId, rId, dec) {
+        const v = parseFloat(document.getElementById(rId).value);
+        document.getElementById(iId).value = v.toFixed(dec);
+      }
+      function si(iId, rId, dec) {
+        const v = parseFloat(document.getElementById(iId).value) || 0;
+        document.getElementById(rId).value = v;
+      }
+
+      // Wear thumb position
+      function updateWearThumb() {
+        const v = parseFloat(document.getElementById("r_wear").value);
+        const pct = (v / 300) * 100;
+        document.getElementById("wearThumb").style.left = pct + "%";
+      }
+
+      // Wear badge label
+      function updateWearBadge() {
+        const v = parseFloat(document.getElementById("tool_wear").value) || 0;
+        const badge = document.getElementById("wear-unit-badge");
+        if (v < 60) {
+          badge.textContent = "FRESH";
+          badge.style.background = "#f0fdf4";
+          badge.style.color = "#16a34a";
+        } else if (v < 120) {
+          badge.textContent = "MEDIUM";
+          badge.style.background = "#fefce8";
+          badge.style.color = "#854d0e";
+        } else if (v < 180) {
+          badge.textContent = "HIGH";
+          badge.style.background = "#fff7ed";
+          badge.style.color = "#c2410c";
+        } else {
+          badge.textContent = "CRITICAL";
+          badge.style.background = "#fef2f2";
+          badge.style.color = "#b91c1c";
+        }
+      }
+
+      // Machine type
+      function setType(t) {
+        mType = t;
+        document.getElementById("machine_type").value = t;
+        ["L", "M", "H"].forEach((x) => {
+          const b = document.getElementById("btn-" + x);
+          b.className = x === t ? `type-btn active-${t}` : "type-btn";
+        });
+      }
+
+      // Connection test
+      async function testConn() {
+        const url = document.getElementById("apiUrl").value.trim();
+        const pill = document.getElementById("connPill");
+        const txt = document.getElementById("connTxt");
+        pill.className = "conn-pill";
+        txt.textContent = "Testing...";
+        try {
+          const r = await fetch(`${url}/health`, {
+            signal: AbortSignal.timeout(4000),
+          });
+          if (r.ok) {
+            pill.className = "conn-pill ok";
+            txt.textContent = "Connected";
+          } else throw 0;
+        } catch {
+          pill.className = "conn-pill err";
+          txt.textContent = "Offline";
+        }
+      }
+
+      // Predict
+      async function predict() {
+        const url = document.getElementById("apiUrl").value.trim();
+        const btn = document.getElementById("predBtn");
+        const btnC = document.getElementById("btnC");
+
+        const payload = {
+          machine_type: mType,
+          air_temperature: parseFloat(
+            document.getElementById("air_temp").value,
+          ),
+          process_temperature: parseFloat(
+            document.getElementById("proc_temp").value,
+          ),
+          rotational_speed: parseFloat(document.getElementById("rpm").value),
+          torque: parseFloat(document.getElementById("torque").value),
+          tool_wear: parseFloat(document.getElementById("tool_wear").value),
+        };
+
+        btn.disabled = true;
+        btnC.innerHTML = '<div class="spinner"></div> Analyzing...';
+
+        try {
+          const res = await fetch(`${url}/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!res.ok) {
+            const e = await res.json();
+            throw new Error(e.detail || "Server error");
+          }
+          const data = await res.json();
+          renderResult(data, payload);
+          addHist(data, payload);
+        } catch (e) {
+          renderErr(e.message);
+        } finally {
+          btn.disabled = false;
+          btnC.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Prediction`;
+        }
+      }
+
+      // Render result
+      function renderResult(data, p) {
+        const pct = Math.round(data.failure_probability * 100);
+        const risk = data.risk_level;
+        const failed = data.failure_predicted;
+        const circ = 2 * Math.PI * 56;
+        const offset = circ - (pct / 100) * circ;
+        const cols = {
+          LOW: "#22c55e",
+          MEDIUM: "#eab308",
+          HIGH: "#f97316",
+          CRITICAL: "#ef4444",
+        };
+        const col = cols[risk];
+
+        document.getElementById("resTime").textContent =
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+
+        document.getElementById("resBody").innerHTML = `
+    <div class="ring-wrap">
+      <div class="ring-box">
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <circle class="ring-track" cx="74" cy="74" r="56"/>
+          <circle class="ring-fill" cx="74" cy="74" r="56"
+            stroke="${col}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" id="ringFill"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="ringPct" style="color:${col}">0%</div>
+          <div class="ring-lbl">Probability</div>
+        </div>
+      </div>
+      <div class="risk-tag risk-${risk}">
+        ${riskSvg(risk)} ${risk} RISK
+      </div>
+    </div>
+
+    <div class="alert ${failed ? "alert-warn" : "alert-ok"}">
+      ${
+        failed
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+          : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+      }
+      ${data.message}
+    </div>
+
+    <div class="stats">
+      <div class="stat stat-blue">
+        <div class="stat-n" style="color:${col}">${pct}%</div>
+        <div class="stat-l">Failure Prob</div>
+      </div>
+      <div class="stat stat-teal">
+        <div class="stat-n" style="color:var(--teal)">${p.machine_type}</div>
+        <div class="stat-l">Machine Type</div>
+      </div>
+      <div class="stat stat-orange">
+        <div class="stat-n" style="color:var(--orange)">${p.rotational_speed}</div>
+        <div class="stat-l">RPM</div>
+      </div>
+      <div class="stat stat-slate">
+        <div class="stat-n">${p.tool_wear}</div>
+        <div class="stat-l">Tool Wear min</div>
+      </div>
+    </div>`;
+
+        // Animate ring
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const el = document.getElementById("ringFill");
+            if (el) el.style.strokeDashoffset = offset;
+          }, 50);
+          let c = 0;
+          const tick = setInterval(() => {
+            c = Math.min(c + Math.ceil(pct / 25), pct);
+            const el = document.getElementById("ringPct");
+            if (el) el.textContent = c + "%";
+            if (c >= pct) clearInterval(tick);
+          }, 28);
+        });
+      }
+
+      function riskSvg(risk) {
+        if (risk === "LOW")
+          return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      }
+
+      function renderErr(msg) {
+        document.getElementById("resBody").innerHTML = `
+    <div class="alert alert-warn" style="margin:20px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ${msg} — Make sure FastAPI is running and CORS is enabled.
+    </div>`;
+      }
+
+      // History
+      function addHist(data, params) {
+        history.unshift({ data, params, ts: new Date() });
+        if (history.length > 15) history.pop();
+        renderHist();
+      }
+
+      function renderHist() {
+        const el = document.getElementById("histList");
+        if (!history.length) {
+          el.innerHTML = '<div class="hempty">No predictions yet</div>';
+          return;
+        }
+        el.innerHTML = history
+          .map((h) => {
+            const pct = Math.round(h.data.failure_probability * 100);
+            const risk = h.data.risk_level;
+            const time = h.ts.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            return `<div class="hrow">
+      <span class="htype ht-${h.params.machine_type}">${h.params.machine_type}</span>
+      <span style="font-size:11px;">wear ${h.params.tool_wear}</span>
+      <span class="hprob">${pct}%</span>
+      <span class="hrisk hr-${risk}">${risk}</span>
+      <span style="font-size:10px;color:#cbd5e1;">${time}</span>
+    </div>`;
+          })
+          .join("");
+      }
+
+      function clearHist() {
+        history = [];
+        renderHist();
+      }
+
+      window.addEventListener("load", () => setTimeout(testConn, 500));
+    </script>
+  </body>
+</html>
