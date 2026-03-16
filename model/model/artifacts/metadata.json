@@ -1,0 +1,29 @@
+{
+  "best_model": "RandomForest",
+  "best_roc_auc": 0.9815,
+  "rf_roc_auc": 0.9815,
+  "xgb_roc_auc": 0.9774,
+  "feature_cols": [
+    "Type_encoded",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
+    "temp_delta",
+    "power_watts",
+    "wear_torque_interaction",
+    "speed_torque_ratio",
+    "wear_bin",
+    "high_temp_flag",
+    "low_speed_flag"
+  ],
+  "label_classes": [
+    "H",
+    "L",
+    "M"
+  ],
+  "smote_used": true,
+  "sklearn_version": "1.5.2",
+  "xgboost_version": "2.1.1"
+}
