@@ -1,0 +1,33 @@
+# ── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# ── Jupyter ───────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Environments ──────────────────────────────────────────
+pm_env/
+venv/
+.venv/
+env/
+.env
+
+# ── Loose EDA / eval plot images ──────────────────────────
+eda_*.png
+eval_*.png
+
+# ── OS files ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── VS Code ───────────────────────────────────────────────
+.vscode/
+
+# ── Large dataset (comment out if you want it on GitHub) ──
+# data/ai4i2020.csv
