@@ -1236,50 +1236,130 @@
 
       // ✅ FIXED: SAME ORIGIN PREDICT
       async function predict() {
-      const btn = document.getElementById("predBtn");
+        const btn = document.getElementById("predBtn");
 
-      const payload = {
-        machine_type: mType,
-        air_temperature: parseFloat(document.getElementById("air_temp").value),
-        process_temperature: parseFloat(document.getElementById("proc_temp").value),
-        rotational_speed: parseFloat(document.getElementById("rpm").value),
-        torque: parseFloat(document.getElementById("torque").value),
-        tool_wear: parseFloat(document.getElementById("tool_wear").value),
-      };
+        const payload = {
+          machine_type: mType,
+          air_temperature: parseFloat(
+            document.getElementById("air_temp").value,
+          ),
+          process_temperature: parseFloat(
+            document.getElementById("proc_temp").value,
+          ),
+          rotational_speed: parseFloat(document.getElementById("rpm").value),
+          torque: parseFloat(document.getElementById("torque").value),
+          tool_wear: parseFloat(document.getElementById("tool_wear").value),
+        };
 
-      console.log("Payload:", payload);
+        console.log("Payload:", payload);
 
-      try {
-        const res = await fetch("/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        try {
+          const res = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
 
-        console.log("Status:", res.status);
+          console.log("Status:", res.status);
 
-        const data = await res.json();
-        console.log("Response:", data);
+          const data = await res.json();
+          console.log("Response:", data);
 
-        renderResult(data, payload);
-      } catch (e) {
-        console.error("ERROR:", e);
-        alert("Prediction failed: " + e.message);
+          renderResult(data, payload);
+          addHist(data, payload)
+        } catch (e) {
+          console.error("ERROR:", e);
+          alert("Prediction failed: " + e.message);
+        }
       }
-    }
-    function renderResult(data, p) {
-  console.log("Rendering result:", data);
+      function renderResult(data, p) {
+        const pct = Math.round(data.failure_probability * 100);
+        const risk = data.risk_level;
+        const failed = data.failure_predicted;
+        const circ = 2 * Math.PI * 56;
+        const offset = circ - (pct / 100) * circ;
+        const cols = {
+          LOW: "#22c55e",
+          MEDIUM: "#eab308",
+          HIGH: "#f97316",
+          CRITICAL: "#ef4444",
+        };
+        const col = cols[risk];
 
-  document.getElementById("resBody").innerHTML = `
-    <div style="padding:20px;">
-      <h3>Result</h3>
-      <p><b>Failure:</b> ${data.failure_predicted}</p>
-      <p><b>Probability:</b> ${data.failure_probability}</p>
-      <p><b>Risk:</b> ${data.risk_level}</p>
-      <p>${data.message}</p>
+        document.getElementById("resTime").textContent =
+          new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+
+        document.getElementById("resBody").innerHTML = `
+    <div class="ring-wrap">
+      <div class="ring-box">
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <circle class="ring-track" cx="74" cy="74" r="56"/>
+          <circle class="ring-fill" cx="74" cy="74" r="56"
+            stroke="${col}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" id="ringFill"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="ringPct" style="color:${col}">0%</div>
+          <div class="ring-lbl">Probability</div>
+        </div>
+      </div>
+      <div class="risk-tag risk-${risk}">
+        ${riskSvg(risk)} ${risk} RISK
+      </div>
     </div>
-  `;
-}
+
+    <div class="alert ${failed ? "alert-warn" : "alert-ok"}">
+      ${
+        failed
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+          : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+      }
+      ${data.message}
+    </div>
+
+    <div class="stats">
+      <div class="stat stat-blue">
+        <div class="stat-n" style="color:${col}">${pct}%</div>
+        <div class="stat-l">Failure Prob</div>
+      </div>
+      <div class="stat stat-teal">
+        <div class="stat-n" style="color:var(--teal)">${p.machine_type}</div>
+        <div class="stat-l">Machine Type</div>
+      </div>
+      <div class="stat stat-orange">
+        <div class="stat-n" style="color:var(--orange)">${p.rotational_speed}</div>
+        <div class="stat-l">RPM</div>
+      </div>
+      <div class="stat stat-slate">
+        <div class="stat-n">${p.tool_wear}</div>
+        <div class="stat-l">Tool Wear min</div>
+      </div>
+    </div>`;
+
+        // Animate ring
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const el = document.getElementById("ringFill");
+            if (el) el.style.strokeDashoffset = offset;
+          }, 50);
+          let c = 0;
+          const tick = setInterval(() => {
+            c = Math.min(c + Math.ceil(pct / 25), pct);
+            const el = document.getElementById("ringPct");
+            if (el) el.textContent = c + "%";
+            if (c >= pct) clearInterval(tick);
+          }, 28);
+        });
+      }
+
+      function riskSvg(risk) {
+        if (risk === "LOW")
+          return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      }
       window.addEventListener("load", () => setTimeout(testConn, 500));
     </script>
   </body>
