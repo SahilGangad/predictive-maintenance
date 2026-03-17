@@ -1236,49 +1236,37 @@
 
       // ✅ FIXED: SAME ORIGIN PREDICT
       async function predict() {
-        const btn = document.getElementById("predBtn");
-        const btnC = document.getElementById("btnC");
+      const btn = document.getElementById("predBtn");
 
-        const payload = {
-          machine_type: mType,
-          air_temperature: parseFloat(
-            document.getElementById("air_temp").value,
-          ),
-          process_temperature: parseFloat(
-            document.getElementById("proc_temp").value,
-          ),
-          rotational_speed: parseFloat(document.getElementById("rpm").value),
-          torque: parseFloat(document.getElementById("torque").value),
-          tool_wear: parseFloat(document.getElementById("tool_wear").value),
-        };
+      const payload = {
+        machine_type: mType,
+        air_temperature: parseFloat(document.getElementById("air_temp").value),
+        process_temperature: parseFloat(document.getElementById("proc_temp").value),
+        rotational_speed: parseFloat(document.getElementById("rpm").value),
+        torque: parseFloat(document.getElementById("torque").value),
+        tool_wear: parseFloat(document.getElementById("tool_wear").value),
+      };
 
-        btn.disabled = true;
-        btnC.innerHTML = '<div class="spinner"></div> Analyzing...';
+      console.log("Payload:", payload);
 
-        try {
-          const res = await fetch(`/predict`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(10000),
-          });
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-          if (!res.ok) {
-            const e = await res.json();
-            throw new Error(e.detail || "Server error");
-          }
+        console.log("Status:", res.status);
 
-          const data = await res.json();
-          renderResult(data, payload);
-          addHist(data, payload);
-        } catch (e) {
-          renderErr(e.message);
-        } finally {
-          btn.disabled = false;
-          btnC.innerHTML = `Run Prediction`;
-        }
+        const data = await res.json();
+        console.log("Response:", data);
+
+        renderResult(data, payload);
+      } catch (e) {
+        console.error("ERROR:", e);
+        alert("Prediction failed: " + e.message);
       }
-
+    }
       window.addEventListener("load", () => setTimeout(testConn, 500));
     </script>
   </body>
