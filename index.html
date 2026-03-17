@@ -1360,6 +1360,36 @@
           return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
         return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
       }
+      // ── History functions ─────────────────────────────────
+function addHist(data, params) {
+  history.unshift({ data, params, ts: new Date() });
+  if (history.length > 15) history.pop();
+  renderHist();
+}
+
+function renderHist() {
+  const el = document.getElementById('histList');
+  if (!history.length) {
+    el.innerHTML = '<div class="hempty">No predictions yet</div>';
+    return;
+  }
+  el.innerHTML = history.map(h => {
+    const pct  = Math.round(h.data.failure_probability * 100);
+    const risk = h.data.risk_level;
+    const time = h.ts.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    return `<div class="hrow">
+      <span class="htype ht-${h.params.machine_type}">${h.params.machine_type}</span>
+      <span style="font-size:11px;">wear ${h.params.tool_wear}</span>
+      <span class="hprob">${pct}%</span>
+      <span class="hrisk hr-${risk}">${risk}</span>
+      <span style="font-size:10px;color:#cbd5e1;">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+function clearHist() { history = []; renderHist(); }
+
+window.addEventListener("load", () => setTimeout(testConn, 500));
       window.addEventListener("load", () => setTimeout(testConn, 500));
     </script>
   </body>
