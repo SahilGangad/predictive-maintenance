@@ -65,7 +65,7 @@ def build_features(data: MachineInput) -> np.ndarray:
 
 @app.get("/")
 def serve_ui():
-    return FileResponse(os.path.join(BASE_DIR, "static\index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.get("/health")
 def health():
