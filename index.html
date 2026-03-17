@@ -1267,6 +1267,19 @@
         alert("Prediction failed: " + e.message);
       }
     }
+    function renderResult(data, p) {
+  console.log("Rendering result:", data);
+
+  document.getElementById("resBody").innerHTML = `
+    <div style="padding:20px;">
+      <h3>Result</h3>
+      <p><b>Failure:</b> ${data.failure_predicted}</p>
+      <p><b>Probability:</b> ${data.failure_probability}</p>
+      <p><b>Risk:</b> ${data.risk_level}</p>
+      <p>${data.message}</p>
+    </div>
+  `;
+}
       window.addEventListener("load", () => setTimeout(testConn, 500));
     </script>
   </body>
