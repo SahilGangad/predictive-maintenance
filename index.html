@@ -896,19 +896,6 @@
           <div class="brand-sub">AI4I 2020 · Machine Failure Detection</div>
         </div>
       </div>
-      <div class="api-bar">
-        <input
-          type="text"
-          id="apiUrl"
-          value="https://predictive-maintenance-e00u.onrender.com/"
-          placeholder="API URL"
-        />
-        <button class="btn-test" onclick="testConn()">Test</button>
-        <div class="conn-pill" id="connPill">
-          <div class="conn-dot"></div>
-          <span id="connTxt">Checking...</span>
-        </div>
-      </div>
     </div>
 
     <!-- Page -->
@@ -1200,37 +1187,21 @@
         document.getElementById(rId).value = v;
       }
 
-      // Wear thumb position
       function updateWearThumb() {
         const v = parseFloat(document.getElementById("r_wear").value);
         const pct = (v / 300) * 100;
         document.getElementById("wearThumb").style.left = pct + "%";
       }
 
-      // Wear badge label
       function updateWearBadge() {
         const v = parseFloat(document.getElementById("tool_wear").value) || 0;
         const badge = document.getElementById("wear-unit-badge");
-        if (v < 60) {
-          badge.textContent = "FRESH";
-          badge.style.background = "#f0fdf4";
-          badge.style.color = "#16a34a";
-        } else if (v < 120) {
-          badge.textContent = "MEDIUM";
-          badge.style.background = "#fefce8";
-          badge.style.color = "#854d0e";
-        } else if (v < 180) {
-          badge.textContent = "HIGH";
-          badge.style.background = "#fff7ed";
-          badge.style.color = "#c2410c";
-        } else {
-          badge.textContent = "CRITICAL";
-          badge.style.background = "#fef2f2";
-          badge.style.color = "#b91c1c";
-        }
+        if (v < 60) badge.textContent = "FRESH";
+        else if (v < 120) badge.textContent = "MEDIUM";
+        else if (v < 180) badge.textContent = "HIGH";
+        else badge.textContent = "CRITICAL";
       }
 
-      // Machine type
       function setType(t) {
         mType = t;
         document.getElementById("machine_type").value = t;
@@ -1240,17 +1211,19 @@
         });
       }
 
-      // Connection test
+      // ✅ FIXED: SAME ORIGIN HEALTH CHECK
       async function testConn() {
-        const url = document.getElementById("apiUrl").value.trim();
         const pill = document.getElementById("connPill");
         const txt = document.getElementById("connTxt");
+
         pill.className = "conn-pill";
         txt.textContent = "Testing...";
+
         try {
-          const r = await fetch(`${url}/health`, {
+          const r = await fetch(`/health`, {
             signal: AbortSignal.timeout(4000),
           });
+
           if (r.ok) {
             pill.className = "conn-pill ok";
             txt.textContent = "Connected";
@@ -1261,9 +1234,8 @@
         }
       }
 
-      // Predict
+      // ✅ FIXED: SAME ORIGIN PREDICT
       async function predict() {
-        const url = document.getElementById("apiUrl").value.trim();
         const btn = document.getElementById("predBtn");
         const btnC = document.getElementById("btnC");
 
@@ -1284,16 +1256,18 @@
         btnC.innerHTML = '<div class="spinner"></div> Analyzing...';
 
         try {
-          const res = await fetch(`${url}/predict`, {
+          const res = await fetch(`/predict`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
             signal: AbortSignal.timeout(10000),
           });
+
           if (!res.ok) {
             const e = await res.json();
             throw new Error(e.detail || "Server error");
           }
+
           const data = await res.json();
           renderResult(data, payload);
           addHist(data, payload);
@@ -1301,144 +1275,8 @@
           renderErr(e.message);
         } finally {
           btn.disabled = false;
-          btnC.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Prediction`;
+          btnC.innerHTML = `Run Prediction`;
         }
-      }
-
-      // Render result
-      function renderResult(data, p) {
-        const pct = Math.round(data.failure_probability * 100);
-        const risk = data.risk_level;
-        const failed = data.failure_predicted;
-        const circ = 2 * Math.PI * 56;
-        const offset = circ - (pct / 100) * circ;
-        const cols = {
-          LOW: "#22c55e",
-          MEDIUM: "#eab308",
-          HIGH: "#f97316",
-          CRITICAL: "#ef4444",
-        };
-        const col = cols[risk];
-
-        document.getElementById("resTime").textContent =
-          new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          });
-
-        document.getElementById("resBody").innerHTML = `
-    <div class="ring-wrap">
-      <div class="ring-box">
-        <svg width="148" height="148" viewBox="0 0 148 148">
-          <circle class="ring-track" cx="74" cy="74" r="56"/>
-          <circle class="ring-fill" cx="74" cy="74" r="56"
-            stroke="${col}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" id="ringFill"/>
-        </svg>
-        <div class="ring-center">
-          <div class="ring-pct" id="ringPct" style="color:${col}">0%</div>
-          <div class="ring-lbl">Probability</div>
-        </div>
-      </div>
-      <div class="risk-tag risk-${risk}">
-        ${riskSvg(risk)} ${risk} RISK
-      </div>
-    </div>
-
-    <div class="alert ${failed ? "alert-warn" : "alert-ok"}">
-      ${
-        failed
-          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
-          : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
-      }
-      ${data.message}
-    </div>
-
-    <div class="stats">
-      <div class="stat stat-blue">
-        <div class="stat-n" style="color:${col}">${pct}%</div>
-        <div class="stat-l">Failure Prob</div>
-      </div>
-      <div class="stat stat-teal">
-        <div class="stat-n" style="color:var(--teal)">${p.machine_type}</div>
-        <div class="stat-l">Machine Type</div>
-      </div>
-      <div class="stat stat-orange">
-        <div class="stat-n" style="color:var(--orange)">${p.rotational_speed}</div>
-        <div class="stat-l">RPM</div>
-      </div>
-      <div class="stat stat-slate">
-        <div class="stat-n">${p.tool_wear}</div>
-        <div class="stat-l">Tool Wear min</div>
-      </div>
-    </div>`;
-
-        // Animate ring
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            const el = document.getElementById("ringFill");
-            if (el) el.style.strokeDashoffset = offset;
-          }, 50);
-          let c = 0;
-          const tick = setInterval(() => {
-            c = Math.min(c + Math.ceil(pct / 25), pct);
-            const el = document.getElementById("ringPct");
-            if (el) el.textContent = c + "%";
-            if (c >= pct) clearInterval(tick);
-          }, 28);
-        });
-      }
-
-      function riskSvg(risk) {
-        if (risk === "LOW")
-          return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
-        return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-      }
-
-      function renderErr(msg) {
-        document.getElementById("resBody").innerHTML = `
-    <div class="alert alert-warn" style="margin:20px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      ${msg} — Make sure FastAPI is running and CORS is enabled.
-    </div>`;
-      }
-
-      // History
-      function addHist(data, params) {
-        history.unshift({ data, params, ts: new Date() });
-        if (history.length > 15) history.pop();
-        renderHist();
-      }
-
-      function renderHist() {
-        const el = document.getElementById("histList");
-        if (!history.length) {
-          el.innerHTML = '<div class="hempty">No predictions yet</div>';
-          return;
-        }
-        el.innerHTML = history
-          .map((h) => {
-            const pct = Math.round(h.data.failure_probability * 100);
-            const risk = h.data.risk_level;
-            const time = h.ts.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            });
-            return `<div class="hrow">
-      <span class="htype ht-${h.params.machine_type}">${h.params.machine_type}</span>
-      <span style="font-size:11px;">wear ${h.params.tool_wear}</span>
-      <span class="hprob">${pct}%</span>
-      <span class="hrisk hr-${risk}">${risk}</span>
-      <span style="font-size:10px;color:#cbd5e1;">${time}</span>
-    </div>`;
-          })
-          .join("");
-      }
-
-      function clearHist() {
-        history = [];
-        renderHist();
       }
 
       window.addEventListener("load", () => setTimeout(testConn, 500));
