@@ -25,6 +25,15 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="AI4I Predictive Maintenance API", lifespan=lifespan)
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all (for now)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_risk_level(prob: float) -> str:
     if prob < 0.2:  return "LOW"
