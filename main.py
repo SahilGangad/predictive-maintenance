@@ -1,7 +1,10 @@
+import time
+import asyncio
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
+from concurrent.futures import ProcessPoolExecutor
 import joblib, os
 from schemas import MachineInput, PredictionResponse
 from fastapi.responses import FileResponse
@@ -13,16 +16,31 @@ model         = None
 scaler        = None
 label_encoder = None
 feature_cols  = None
+process_pool  = None   # ProcessPoolExecutor for CPU-bound batch scoring
+
+# Workers are forked (default start method on Linux) AFTER the model is
+# loaded below, so each worker process inherits its own in-memory copy of
+# model/scaler/label_encoder/feature_cols via copy-on-write — no re-loading
+# or IPC needed per request.
+WORKER_COUNT = max(1, (os.cpu_count() or 2) - 1)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model, scaler, label_encoder, feature_cols
+    global model, scaler, label_encoder, feature_cols, process_pool
     model         = joblib.load(os.path.join(ARTIFACTS_DIR, 'model.pkl'))
     scaler        = joblib.load(os.path.join(ARTIFACTS_DIR, 'scaler.pkl'))
     label_encoder = joblib.load(os.path.join(ARTIFACTS_DIR, 'label_encoder.pkl'))
     feature_cols  = joblib.load(os.path.join(ARTIFACTS_DIR, 'feature_cols.pkl'))
     print("✅ Model loaded")
+
+    # Pool is created *after* the model is loaded so forked workers already
+    # have it in memory.
+    process_pool = ProcessPoolExecutor(max_workers=WORKER_COUNT)
+    print(f"✅ Process pool started with {WORKER_COUNT} workers")
+
     yield
+
+    process_pool.shutdown(wait=True)
 
 app = FastAPI(title="AI4I Predictive Maintenance API", lifespan=lifespan)
 from fastapi.middleware.cors import CORSMiddleware
@@ -72,6 +90,25 @@ def build_features(data: MachineInput) -> np.ndarray:
         speed_torque_ratio, wear_bin, high_temp_flag, low_speed_flag
     ]])
 
+def _score_record(data: MachineInput) -> dict:
+    """
+    Pure, top-level scoring function with no FastAPI/HTTP concerns.
+    Must stay top-level (not a closure/method) so it can be pickled and
+    sent to worker processes by ProcessPoolExecutor.
+    """
+    features        = build_features(data)
+    features_scaled = scaler.transform(features)
+    prediction      = model.predict(features_scaled)[0]
+    probability     = model.predict_proba(features_scaled)[0][1]
+    risk            = get_risk_level(float(probability))
+
+    return {
+        "failure_predicted": bool(prediction),
+        "failure_probability": round(float(probability), 4),
+        "risk_level": risk,
+        "message": "⚠️ Maintenance required!" if prediction else "✅ Machine operating normally."
+    }
+
 @app.get("/")
 def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
@@ -84,21 +121,66 @@ def health():
 @app.post("/predict", response_model=PredictionResponse)
 def predict(data: MachineInput):
     try:
-        features        = build_features(data)
-        features_scaled = scaler.transform(features)
-        prediction      = model.predict(features_scaled)[0]
-        probability     = model.predict_proba(features_scaled)[0][1]
-        risk            = get_risk_level(float(probability))
-
-        return PredictionResponse(
-            failure_predicted=bool(prediction),
-            failure_probability=round(float(probability), 4),
-            risk_level=risk,
-            message="⚠️ Maintenance required!" if prediction else "✅ Machine operating normally."
-        )
+        return PredictionResponse(**_score_record(data))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/predict/batch")
+@app.post("/predict/batch", response_model=list[PredictionResponse])
 def predict_batch(data: list[MachineInput]):
-    return [predict(d) for d in data]
+    """
+    Sequential batch scoring — single process, single core. Fine for small
+    batches; kept as the baseline to compare against the parallel version.
+    """
+    try:
+        return [PredictionResponse(**_score_record(d)) for d in data]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predict/batch/parallel", response_model=list[PredictionResponse])
+async def predict_batch_parallel(data: list[MachineInput]):
+    """
+    CPU-bound batch scoring, parallelized across processes.
+
+    Model inference (Random Forest / XGBoost predict + predict_proba) is
+    CPU-bound, not I/O-bound — so this uses a ProcessPoolExecutor (real OS
+    processes, sidesteps the GIL) rather than asyncio/threads, which would
+    only help if we were waiting on network/disk I/O, not crunching numbers.
+
+    The endpoint itself is `async def` only so the event loop stays free
+    to serve other requests while these workers run — the parallelism
+    doing the actual work is the process pool, not the `async` keyword.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+        tasks = [loop.run_in_executor(process_pool, _score_record, d) for d in data]
+        results = await asyncio.gather(*tasks)
+        return [PredictionResponse(**r) for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/benchmark")
+def benchmark(data: list[MachineInput]):
+    """
+    Scores the same batch sequentially vs. via the process pool and returns
+    timing for both, so the speedup (or overhead, for small batches) is
+    directly visible instead of asserted.
+    """
+    t0 = time.perf_counter()
+    _ = [_score_record(d) for d in data]
+    sequential_seconds = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    futures = [process_pool.submit(_score_record, d) for d in data]
+    _ = [f.result() for f in futures]
+    parallel_seconds = time.perf_counter() - t0
+
+    return {
+        "batch_size": len(data),
+        "worker_count": WORKER_COUNT,
+        "sequential_seconds": round(sequential_seconds, 4),
+        "parallel_seconds": round(parallel_seconds, 4),
+        "speedup_x": round(sequential_seconds / parallel_seconds, 2) if parallel_seconds > 0 else None,
+        "note": "Process-pool overhead (spawning/serializing to workers) can "
+                "make small batches slower in parallel than sequential — the "
+                "crossover point is exactly what this endpoint lets you measure."
+    }
